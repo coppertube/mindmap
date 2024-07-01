@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use tokio;
 
 mod create;
 mod delete;
@@ -26,11 +27,12 @@ enum Commands {
     Delete(delete::Args),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Args::parse();
 
     match &cli.command {
-        Commands::Create(args) => create::command(args),
+        Commands::Create(args) => create::command(args).await,
         Commands::List(args) => list::command(args),
         Commands::Show(args) => show::command(args),
         Commands::Update(args) => update::command(args),

@@ -1,12 +1,35 @@
+use chrono::NaiveDateTime;
 use clap::Parser;
-use mindmap::Task;
+use mindmap::{Task, Priority};
+use mindmap::db::get_client;
 
-#[derive(Parser)]
-pub struct Args {}
+#[derive(Parser, Clone, Debug)]
+pub struct Args {
+    #[clap(long)]
+    description: String,
+    #[clap(long)]
+    priority: Priority,
+    #[clap(long, value_parser=parse_datetime)]
+    deadline: NaiveDateTime,
+}
 
-pub fn command(_args: &Args) {
+fn parse_datetime(s: &str) -> Result<NaiveDateTime, chrono::ParseError> {
+    NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
+}
+
+pub async fn command(args: &Args) {
+
     let task = Task {
-        description: String::from("don't slack off"),
+        description: args.description.clone(),
+        priority: args.priority.clone(),
+        deadline: args.deadline,
     };
+
+    let client = get_client().await.expect("Failed to get client");
+    client.execute(
+        "INSERT INTO todo (description, priority, deadline) VALUES ($1, $2, $3)",
+        &[&task.description, &task.priority, &task.deadline],
+    ).await.expect("Failed to insert task");
+
     println!("Task \"{}\" created successfully!", task.description);
 }

@@ -43,7 +43,8 @@
               });
             in
             {
-              ${projectName} = craneLib.buildPackage { };
+              mindmap = craneLib.buildPackage { meta.mainProgram = "mindmap"; };
+              todo = craneLib.buildPackage { meta.mainProgram = "todo"; };
             });
       in
       {

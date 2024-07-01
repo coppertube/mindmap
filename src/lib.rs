@@ -1,6 +1,12 @@
+use std::error::Error as StdError;
 use std::fmt;
 
-use chrono::NaiveDate;
+use bytes::BytesMut;
+use chrono::{NaiveDate, NaiveDateTime};
+use clap::ValueEnum;
+use tokio_postgres::types::{IsNull, ToSql, Type};
+
+pub mod db;
 
 pub enum Difficulty {
     Low,
@@ -18,6 +24,7 @@ impl fmt::Display for Difficulty {
     }
 }
 
+#[derive(Debug, Clone, ValueEnum)]
 pub enum Priority {
     Low,
     Medium,
@@ -34,6 +41,28 @@ impl fmt::Display for Priority {
     }
 }
 
+impl ToSql for Priority {
+    fn to_sql(
+        &self,
+        _ty: &Type,
+        out: &mut BytesMut,
+    ) -> Result<IsNull, Box<dyn StdError + Send + Sync>> {
+        match self {
+            Priority::Low => out.extend_from_slice(b"low"),
+            Priority::Medium => out.extend_from_slice(b"medium"),
+            Priority::High => out.extend_from_slice(b"high"),
+        }
+        Ok(IsNull::No)
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty.name() == "priority"
+    }
+
+    tokio_postgres::types::to_sql_checked!();
+}
+
+#[derive(Debug, Clone)]
 pub struct Task {
     pub description: String,
     pub difficulty: Option<Difficulty>,

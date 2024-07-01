@@ -1,12 +1,13 @@
-use chrono::{Local, Weekday};
+use chrono::{Local, NaiveDateTime, Weekday};
 use clap::Parser;
 use inquire::{DateSelect, Select};
+use mindmap::db::get_client;
 use mindmap::{Difficulty, Priority, Task};
 
 #[derive(Parser)]
 pub struct Args {}
 
-pub fn command(_args: &Args) {
+pub async fn command(_args: &Args) {
     let task = Task {
         description: inquire::prompt_text("Description").expect("An error occurred!"),
         difficulty: Select::new(
@@ -27,5 +28,15 @@ pub fn command(_args: &Args) {
             .prompt_skippable()
             .expect("An error occurred!"),
     };
+
+    let client = get_client().await.expect("Failed to get client");
+    client
+        .execute(
+            "INSERT INTO todo (description, priority, deadline) VALUES ($1, $2, $3)",
+            &[&task.description, &task.priority, &task.deadline],
+        )
+        .await
+        .expect("Failed to insert task");
+
     println!("Task \"{}\" created successfully!", task.description);
 }

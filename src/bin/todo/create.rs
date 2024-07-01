@@ -9,12 +9,8 @@ pub struct Args {
     description: String,
     #[clap(long)]
     priority: Priority,
-    #[clap(long, value_parser=parse_datetime)]
+    #[clap(long, value_parser=mindmap::parse_datetime)]
     deadline: NaiveDateTime,
-}
-
-fn parse_datetime(s: &str) -> Result<NaiveDateTime, chrono::ParseError> {
-    NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
 }
 
 pub async fn command(args: &Args) {

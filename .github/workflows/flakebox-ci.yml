@@ -11,9 +11,12 @@ jobs:
     - name: Magic Nix Cache
       uses: DeterminateSystems/magic-nix-cache-action@v2
     - name: Build on ${{ matrix.host }}
-      run: nix build -L .#ci.mindmap
+      run: nix build -L .#ci.${{ matrix.binary }}
     strategy:
       matrix:
+        binary:
+        - mindmap
+        - todo
         host:
         - macos-x86_64
         - macos-aarch64

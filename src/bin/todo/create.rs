@@ -1,31 +1,42 @@
-use chrono::NaiveDateTime;
+use chrono::{Local, NaiveDateTime, Weekday};
 use clap::Parser;
-use mindmap::{Task, Priority};
+use inquire::{DateSelect, Select};
 use mindmap::db::get_client;
+use mindmap::{Difficulty, Priority, Task};
 
-#[derive(Parser, Clone, Debug)]
-pub struct Args {
-    #[clap(long)]
-    description: String,
-    #[clap(long)]
-    priority: Priority,
-    #[clap(long, value_parser=mindmap::parse_datetime)]
-    deadline: NaiveDateTime,
-}
+#[derive(Parser)]
+pub struct Args {}
 
-pub async fn command(args: &Args) {
-
+pub async fn command(_args: &Args) {
     let task = Task {
-        description: args.description.clone(),
-        priority: args.priority.clone(),
-        deadline: args.deadline,
+        description: inquire::prompt_text("Description").expect("An error occurred!"),
+        difficulty: Select::new(
+            "Difficulty",
+            vec![Difficulty::Low, Difficulty::Medium, Difficulty::High],
+        )
+        .prompt_skippable()
+        .expect("An error occurred!"),
+        priority: Select::new(
+            "Priority",
+            vec![Priority::Low, Priority::Medium, Priority::High],
+        )
+        .prompt_skippable()
+        .expect("An error occurred!"),
+        deadline: DateSelect::new("Deadline")
+            .with_min_date(Local::now().date_naive())
+            .with_week_start(Weekday::Mon)
+            .prompt_skippable()
+            .expect("An error occurred!"),
     };
 
     let client = get_client().await.expect("Failed to get client");
-    client.execute(
-        "INSERT INTO todo (description, priority, deadline) VALUES ($1, $2, $3)",
-        &[&task.description, &task.priority, &task.deadline],
-    ).await.expect("Failed to insert task");
+    client
+        .execute(
+            "INSERT INTO todo (description, priority, deadline) VALUES ($1, $2, $3)",
+            &[&task.description, &task.priority, &task.deadline],
+        )
+        .await
+        .expect("Failed to insert task");
 
     println!("Task \"{}\" created successfully!", task.description);
 }

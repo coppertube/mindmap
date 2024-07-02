@@ -1,35 +1,64 @@
+use std::error::Error as StdError;
+use std::fmt;
+use std::str::FromStr;
+
+use bytes::BytesMut;
+use chrono::{NaiveDate, NaiveDateTime};
+use clap::ValueEnum;
+use tokio_postgres::types::{FromSql, IsNull, ToSql, Type};
+
 pub mod db;
 
-use chrono::NaiveDateTime;
-use clap::ValueEnum;
-use tokio_postgres::types::{IsNull, ToSql, FromSql, Type};
-use std::error::Error as StdError;
-use std::str::FromStr;
-use bytes::BytesMut;
+#[derive(Debug, Clone, ValueEnum)]
+pub enum Difficulty {
+    Low,
+    Medium,
+    High,
+}
+
+impl fmt::Display for Difficulty {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Difficulty::Low => write!(f, "Low"),
+            Difficulty::Medium => write!(f, "Medium"),
+            Difficulty::High => write!(f, "High"),
+        }
+    }
+}
 
 #[derive(Debug, Clone, ValueEnum)]
 pub enum Priority {
     Low,
-    Neutral,
-    Unknown,
+    Medium,
     High,
-    Critical,
+}
+
+impl fmt::Display for Priority {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Priority::Low => write!(f, "Low"),
+            Priority::Medium => write!(f, "Medium"),
+            Priority::High => write!(f, "High"),
+        }
+    }
 }
 
 impl ToSql for Priority {
-    fn to_sql(&self, _ty: &Type, out: &mut BytesMut) -> Result<IsNull, Box<dyn StdError + Send + Sync>> {
+    fn to_sql(
+        &self,
+        _ty: &Type,
+        out: &mut BytesMut,
+    ) -> Result<IsNull, Box<dyn StdError + Send + Sync>> {
         match self {
             Priority::Low => out.extend_from_slice(b"low"),
-            Priority::Neutral => out.extend_from_slice(b"neutral"),
-            Priority::Unknown => out.extend_from_slice(b"unknown"),
+            Priority::Medium => out.extend_from_slice(b"medium"),
             Priority::High => out.extend_from_slice(b"high"),
-            Priority::Critical => out.extend_from_slice(b"critical"),
         }
         Ok(IsNull::No)
     }
 
     fn accepts(ty: &Type) -> bool {
-        ty.name() == "priority" 
+        ty.name() == "priority"
     }
 
     tokio_postgres::types::to_sql_checked!();
@@ -41,10 +70,8 @@ impl FromStr for Priority {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "low" => Ok(Priority::Low),
-            "neutral" => Ok(Priority::Neutral),
-            "unknown" => Ok(Priority::Unknown),
+            "medium" => Ok(Priority::Medium),
             "high" => Ok(Priority::High),
-            "critical" => Ok(Priority::Critical),
             _ => Err(format!("Invalid priority: {}", s)),
         }
     }
@@ -53,7 +80,10 @@ impl FromStr for Priority {
 impl<'a> FromSql<'a> for Priority {
     fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn StdError + Send + Sync>> {
         let s = std::str::from_utf8(raw)?;
-        s.parse().map_err(|e| Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e)) as Box<dyn StdError + Send + Sync>)
+        s.parse().map_err(|e| {
+            Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+                as Box<dyn StdError + Send + Sync>
+        })
     }
 
     fn accepts(ty: &Type) -> bool {
@@ -68,6 +98,7 @@ pub fn parse_datetime(s: &str) -> Result<NaiveDateTime, chrono::ParseError> {
 #[derive(Debug, Clone)]
 pub struct Task {
     pub description: String,
-    pub priority: Priority,
-    pub deadline: NaiveDateTime,
+    pub difficulty: Option<Difficulty>,
+    pub priority: Option<Priority>,
+    pub deadline: Option<NaiveDate>,
 }

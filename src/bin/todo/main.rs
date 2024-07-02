@@ -5,6 +5,7 @@ mod delete;
 mod list;
 mod show;
 mod update;
+mod complete;
 
 #[derive(Parser)]
 struct Args {
@@ -24,6 +25,8 @@ enum Commands {
     Update(update::Args),
     /// Delete a task
     Delete(delete::Args),
+    /// Generate shell completion scripts
+    Complete(complete::Args),
 }
 
 fn main() {
@@ -35,5 +38,6 @@ fn main() {
         Commands::Show(args) => show::command(args),
         Commands::Update(args) => update::command(args),
         Commands::Delete(args) => delete::command(args),
+        Commands::Complete(args) => complete::command(args),
     }
 }

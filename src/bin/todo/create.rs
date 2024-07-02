@@ -1,4 +1,4 @@
-use chrono::{Local, NaiveDateTime, Weekday};
+use chrono::{Local, Weekday};
 use clap::Parser;
 use inquire::{DateSelect, Select};
 use mindmap::db::get_client;
@@ -32,8 +32,8 @@ pub async fn command(_args: &Args) {
     let client = get_client().await.expect("Failed to get client");
     client
         .execute(
-            "INSERT INTO todo (description, priority, deadline) VALUES ($1, $2, $3)",
-            &[&task.description, &task.priority, &task.deadline],
+            "INSERT INTO todo (description, priority, difficulty, deadline) VALUES ($1, $2, $3, $4)",
+            &[&task.description, &task.priority, &task.difficulty, &task.deadline],
         )
         .await
         .expect("Failed to insert task");

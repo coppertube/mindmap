@@ -1,9 +1,10 @@
-use tokio_postgres::{Client, NoTls, Error};
+use crate::Task;
 use dotenv::dotenv;
 use std::env;
-use tokio::sync::OnceCell as TokOnceCell;
+use tokio::sync::OnceCell;
+use tokio_postgres::{Client, Error, NoTls};
 
-static CLIENT: TokOnceCell<Client> = TokOnceCell::const_new();
+static CLIENT: OnceCell<Client> = OnceCell::const_new();
 
 async fn init_client() -> Result<Client, Error> {
     dotenv().ok();
@@ -22,4 +23,28 @@ async fn init_client() -> Result<Client, Error> {
 
 pub async fn get_client() -> Result<&'static Client, Error> {
     CLIENT.get_or_try_init(init_client).await
+}
+
+pub async fn get_all_tasks() -> Result<Vec<Task>, Error> {
+    let client = get_client().await?;
+
+    let rows = client
+        .query(
+            "SELECT description, priority, difficulty, deadline FROM todo",
+            &[],
+        )
+        .await
+        .expect("Failed to fetch all tasks.");
+
+    let tasks: Vec<Task> = rows
+        .iter()
+        .map(|row| Task {
+            description: row.get(0),
+            priority: row.get(1),
+            difficulty: row.get(2),
+            deadline: row.get(3),
+        })
+        .collect();
+
+    Ok(tasks)
 }

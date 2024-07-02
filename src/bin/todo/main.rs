@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use tokio;
 
 mod create;
 mod delete;

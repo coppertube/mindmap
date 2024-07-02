@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use bytes::BytesMut;
-use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDate;
 use clap::ValueEnum;
 use tokio_postgres::types::{FromSql, IsNull, ToSql, Type};
 
@@ -23,6 +23,54 @@ impl fmt::Display for Difficulty {
             Difficulty::Medium => write!(f, "Medium"),
             Difficulty::High => write!(f, "High"),
         }
+    }
+}
+
+impl FromStr for Difficulty {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "low" => Ok(Difficulty::Low),
+            "medium" => Ok(Difficulty::Medium),
+            "high" => Ok(Difficulty::High),
+            _ => Err(format!("Invalid difficulty: {}", s)),
+        }
+    }
+}
+
+impl ToSql for Difficulty {
+    fn to_sql(
+        &self,
+        _ty: &Type,
+        out: &mut BytesMut,
+    ) -> Result<IsNull, Box<dyn StdError + Send + Sync>> {
+        match self {
+            Difficulty::Low => out.extend_from_slice(b"low"),
+            Difficulty::Medium => out.extend_from_slice(b"medium"),
+            Difficulty::High => out.extend_from_slice(b"high"),
+        }
+        Ok(IsNull::No)
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty.name() == "difficulty"
+    }
+
+    tokio_postgres::types::to_sql_checked!();
+}
+
+impl<'a> FromSql<'a> for Difficulty {
+    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn StdError + Send + Sync>> {
+        let s = std::str::from_utf8(raw)?;
+        s.parse().map_err(|e| {
+            Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+                as Box<dyn StdError + Send + Sync>
+        })
+    }
+
+    fn accepts(ty: &Type) -> bool {
+        ty.name() == "difficulty"
     }
 }
 
@@ -89,10 +137,6 @@ impl<'a> FromSql<'a> for Priority {
     fn accepts(ty: &Type) -> bool {
         ty.name() == "priority"
     }
-}
-
-pub fn parse_datetime(s: &str) -> Result<NaiveDateTime, chrono::ParseError> {
-    NaiveDateTime::parse_from_str(s, "%Y-%m-%dT%H:%M:%S")
 }
 
 #[derive(Debug, Clone)]

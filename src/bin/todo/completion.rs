@@ -1,6 +1,8 @@
+use std::io;
+
 use clap::{CommandFactory, Parser};
 use clap_complete::{generate, Shell};
-use std::io;
+
 
 #[derive(Parser)]
 pub struct Args {

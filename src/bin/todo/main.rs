@@ -30,15 +30,16 @@ enum Commands {
     Completion(completion::Args),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Args::parse();
 
     match &cli.command {
-        Commands::Create(args) => create::command(args),
-        Commands::List(args) => list::command(args),
+        Commands::Create(args) => create::command(args).await,
+        Commands::List(args) => list::command(args).await,
         Commands::Show(args) => show::command(args),
-        Commands::Update(args) => update::command(args),
-        Commands::Delete(args) => delete::command(args),
+        Commands::Update(args) => update::command(args).await,
+        Commands::Delete(args) => delete::command(args).await,
         Commands::Completion(args) => completion::command(args),
     }
 }

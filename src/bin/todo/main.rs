@@ -1,11 +1,11 @@
 use clap::{Parser, Subcommand};
 
+mod completion;
 mod create;
 mod delete;
 mod list;
 mod show;
 mod update;
-mod completion;
 
 #[derive(Parser)]
 struct Args {

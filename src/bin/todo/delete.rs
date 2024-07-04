@@ -1,6 +1,6 @@
 use clap::Parser;
 use inquire::Select;
-use mindmap::db::{get_all_tasks, get_client};
+use mindmap::db::{delete_task, get_all_tasks};
 
 #[derive(Parser)]
 pub struct Args {}
@@ -16,14 +16,7 @@ pub async fn command(_args: &Args) {
     .prompt()
     .expect("An error occurred!");
 
-    let client = get_client().await.expect("Failed to fetch client");
-    client
-        .execute(
-            "DELETE FROM todo WHERE description = $1",
-            &[&task_description],
-        )
+    delete_task(task_description.to_string())
         .await
-        .expect("Failed to delete task");
-
-    println!("Task \"{}\" deleted successfully!", task_description);
+        .expect("Failed to delete task.");
 }

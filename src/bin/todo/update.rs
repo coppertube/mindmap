@@ -1,6 +1,6 @@
 use chrono::{Local, Weekday};
 use clap::Parser;
-use mindmap::db::{get_all_tasks, get_client};
+use mindmap::db::{get_all_tasks, update_task};
 use mindmap::{Difficulty, Priority, Task};
 
 #[derive(Parser)]
@@ -59,14 +59,13 @@ pub async fn command(_args: &Args) {
             .expect("An error occurred!"),
     };
 
-    let client = get_client().await.expect("Failed to fetch client");
-    client
-        .execute(
-            "UPDATE todo SET description = $1, priority = $2, difficulty = $3, deadline = $4 WHERE description = $5",
-            &[&new_task.description, &new_task.priority, &new_task.difficulty, &new_task.deadline, &task_description],
-        )
-        .await
-        .expect("Failed to update task");
-
-    println!("Task updated successfully!");
+    update_task(
+        new_task.description,
+        new_task.priority,
+        new_task.difficulty,
+        new_task.deadline,
+        task_description,
+    )
+    .await
+    .expect("Failed to update task.");
 }

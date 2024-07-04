@@ -1,7 +1,7 @@
 use chrono::{Local, Weekday};
 use clap::Parser;
 use inquire::{DateSelect, Select};
-use mindmap::db::get_client;
+use mindmap::db::insert_todo;
 use mindmap::{Difficulty, Priority, Task};
 
 #[derive(Parser)]
@@ -29,14 +29,12 @@ pub async fn command(_args: &Args) {
             .expect("An error occurred!"),
     };
 
-    let client = get_client().await.expect("Failed to get client");
-    client
-        .execute(
-            "INSERT INTO todo (description, priority, difficulty, deadline) VALUES ($1, $2, $3, $4)",
-            &[&task.description, &task.priority, &task.difficulty, &task.deadline],
-        )
-        .await
-        .expect("Failed to insert task");
-
-    println!("Task \"{}\" created successfully!", task.description);
+    insert_todo(
+        task.description,
+        task.priority,
+        task.difficulty,
+        task.deadline,
+    )
+    .await
+    .expect("Failed to insert task.");
 }

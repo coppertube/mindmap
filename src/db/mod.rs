@@ -1,8 +1,11 @@
-use crate::Task;
-use dotenv::dotenv;
 use std::env;
+
+use chrono::{Local, NaiveDate};
+use dotenv::dotenv;
 use tokio::sync::OnceCell;
-use tokio_postgres::{Client, Error, NoTls};
+use tokio_postgres::{Client, Error, NoTls, Row};
+
+use crate::{Difficulty, Priority, Task};
 
 static CLIENT: OnceCell<Client> = OnceCell::const_new();
 
@@ -47,4 +50,74 @@ pub async fn get_all_tasks() -> Result<Vec<Task>, Error> {
         .collect();
 
     Ok(tasks)
+}
+
+pub async fn insert_todo(
+    description: String,
+    priority: Option<Priority>,
+    difficulty: Option<Difficulty>,
+    deadline: Option<NaiveDate>,
+) -> Result<(), Error> {
+    let client = get_client().await?;
+
+    client
+        .execute(
+            "INSERT INTO todo (description, priority, difficulty, deadline) VALUES ($1, $2, $3, $4)",
+            &[&description, &priority, &difficulty, &deadline],
+        )
+        .await
+        .expect("Failed to insert task");
+
+    println!("Task \"{}\" created successfully!", description);
+
+    Ok(())
+}
+
+pub async fn delete_task(description: String) -> Result<(), Error> {
+    let client = get_client().await?;
+
+    client
+        .execute("DELETE FROM todo WHERE description = $1", &[&description])
+        .await
+        .expect("Failed to delete task");
+
+    println!("Task \"{}\" deleted successfully!", description);
+
+    Ok(())
+}
+
+pub async fn list_tasks() -> Result<Vec<Row>, Error> {
+    let client = get_client().await?;
+
+    let today = Local::now().date_naive();
+    let rows = client
+        .query(
+            "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
+            &[&today],
+        )
+        .await
+        .expect("Failed to fetch tasks");
+
+    Ok(rows)
+}
+
+pub async fn update_task(
+    new_description: String,
+    new_priority: Option<Priority>,
+    new_difficulty: Option<Difficulty>,
+    new_deadline: Option<NaiveDate>,
+    old_description: String,
+) -> Result<(), Error> {
+    let client = get_client().await?;
+    client
+        .execute(
+            "UPDATE todo SET description = $1, priority = $2, difficulty = $3, deadline = $4 WHERE description = $5",
+            &[&new_description, &new_priority, &new_difficulty, &new_deadline, &old_description],
+        )
+        .await
+        .expect("Failed to update task");
+
+    println!("Task updated successfully!");
+
+    Ok(())
 }

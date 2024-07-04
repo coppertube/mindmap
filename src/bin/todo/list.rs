@@ -1,20 +1,11 @@
-use chrono::Local;
 use clap::Parser;
-use mindmap::db::get_client;
+use mindmap::db::list_tasks;
 
 #[derive(Parser)]
 pub struct Args {}
 
 pub async fn command(_args: &Args) {
-    let client = get_client().await.expect("Failed to fetch client");
-    let today = Local::now().date_naive();
-    let rows = client
-        .query(
-            "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
-            &[&today],
-        )
-        .await
-        .expect("Failed to fetch tasks");
+    let rows = list_tasks().await.expect("Failed to list tasks.");
 
     for row in rows {
         let description: String = row.get(0);

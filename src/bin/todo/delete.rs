@@ -1,12 +1,12 @@
 use clap::Parser;
 use inquire::Select;
-use mindmap::db::get_all_tasks;
+use mindmap::Task;
 
 #[derive(Parser)]
 pub struct Args {}
 
 pub async fn command(_args: &Args) {
-    let tasks = get_all_tasks()
+    let tasks = Task::list_tasks(false)
         .await
         .expect("Internal Server Error. Try Again!");
 
@@ -22,5 +22,5 @@ pub async fn command(_args: &Args) {
         .find(|task| task.description == *task_description)
         .expect("Task not found!");
 
-    task.delete_task().await.expect("Failed to delete task");
+    task.delete_from_db().await.expect("Failed to delete task");
 }

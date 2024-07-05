@@ -5,9 +5,9 @@ use mindmap::Task;
 pub struct Args {}
 
 pub async fn command(_args: &Args) {
-    let rows = Task::list_tasks()
+    let rows = Task::list_tasks(true)
         .await
-        .expect("Failed to fetch all tasks.");
+        .expect("Failed to fetch today's tasks.");
 
     for row in rows {
         println!("------------------------\nTask: {}", row.description);

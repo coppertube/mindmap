@@ -150,8 +150,18 @@ pub struct Task {
     pub deadline: Option<NaiveDate>,
 }
 
+impl fmt::Display for Task {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "\nTask: {}\nPriority: {:?}\nDifficulty: {:?}\nDeadline: {:?}\n",
+            self.description, self.priority, self.difficulty, self.deadline
+        )
+    }
+}
+
 impl Task {
-    pub async fn insert_todo(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn save_to_db(&self) -> Result<(), Box<dyn Error>> {
         let client = get_client().await?;
 
         client
@@ -167,7 +177,7 @@ impl Task {
         Ok(())
     }
 
-    pub async fn delete_task(&self) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_from_db(&self) -> Result<(), Box<dyn Error>> {
         let client = get_client().await?;
 
         client
@@ -183,17 +193,25 @@ impl Task {
         Ok(())
     }
 
-    pub async fn list_tasks() -> Result<Vec<Task>, Box<dyn Error>> {
+    pub async fn list_tasks(current: bool) -> Result<Vec<Task>, Box<dyn Error>> {
         let client = get_client().await?;
 
         let today = Local::now().date_naive();
-        let rows = client
-            .query(
+        let (query, params): (&str, &[&(dyn ToSql + Sync)]) = if current {
+            (
                 "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
                 &[&today],
             )
+        } else {
+            (
+                "SELECT description, priority, difficulty, deadline FROM todo",
+                &[],
+            )
+        };
+        let rows = client
+            .query(query, params)
             .await
-            .expect("Failed to fetch all tasks.");
+            .expect("Failed to fetch tasks.");
 
         let tasks: Vec<Task> = rows
             .iter()

@@ -1,9 +1,9 @@
 use std::io;
 
-use clap::CommandFactory;
+use clap::{CommandFactory, Parser};
 use clap_complete::{generate, Shell};
 
-#[derive(clap::Args)]
+#[derive(Parser)]
 pub struct Args {
     #[clap(value_enum, help = "The shell to generate completions script for")]
     pub shell: Shell,

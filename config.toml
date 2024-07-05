@@ -1,0 +1,8 @@
+debug = 0
+
+[database]
+name = "mindmap"
+host = "localhost"
+password = "password"
+port = 5432
+username = "postgres"

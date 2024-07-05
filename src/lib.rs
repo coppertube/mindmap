@@ -2,6 +2,8 @@ use std::fmt;
 
 use chrono::NaiveDate;
 
+pub mod configuration;
+
 pub enum Difficulty {
     Low,
     Medium,

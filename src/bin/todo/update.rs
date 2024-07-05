@@ -1,6 +1,6 @@
 use chrono::{Local, Weekday};
 use clap::Parser;
-use mindmap::db::{get_all_tasks, update_task};
+use mindmap::db::get_all_tasks;
 use mindmap::{Difficulty, Priority, Task};
 
 #[derive(Parser)]
@@ -59,13 +59,8 @@ pub async fn command(_args: &Args) {
             .expect("An error occurred!"),
     };
 
-    update_task(
-        new_task.description,
-        new_task.priority,
-        new_task.difficulty,
-        new_task.deadline,
-        task_description,
-    )
-    .await
-    .expect("Failed to update task.");
+    new_task
+        .update_task(task_description)
+        .await
+        .expect("Failed to update task");
 }

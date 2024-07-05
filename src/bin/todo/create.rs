@@ -1,7 +1,6 @@
 use chrono::{Local, Weekday};
 use clap::Parser;
 use inquire::{DateSelect, Select};
-use mindmap::db::insert_todo;
 use mindmap::{Difficulty, Priority, Task};
 
 #[derive(Parser)]
@@ -29,12 +28,5 @@ pub async fn command(_args: &Args) {
             .expect("An error occurred!"),
     };
 
-    insert_todo(
-        task.description,
-        task.priority,
-        task.difficulty,
-        task.deadline,
-    )
-    .await
-    .expect("Failed to insert task.");
+    task.insert_todo().await.expect("Failed to insert task");
 }

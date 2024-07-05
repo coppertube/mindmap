@@ -1,10 +1,11 @@
-use std::error::Error as StdError;
+use std::error::Error;
 use std::fmt;
 use std::str::FromStr;
 
 use bytes::BytesMut;
-use chrono::NaiveDate;
+use chrono::{Local, NaiveDate};
 use clap::ValueEnum;
+use db::get_client;
 use tokio_postgres::types::{FromSql, IsNull, ToSql, Type};
 
 pub mod db;
@@ -46,7 +47,7 @@ impl ToSql for Difficulty {
         &self,
         _ty: &Type,
         out: &mut BytesMut,
-    ) -> Result<IsNull, Box<dyn StdError + Send + Sync>> {
+    ) -> Result<IsNull, Box<dyn Error + Send + Sync>> {
         match self {
             Difficulty::Low => out.extend_from_slice(b"low"),
             Difficulty::Medium => out.extend_from_slice(b"medium"),
@@ -63,11 +64,11 @@ impl ToSql for Difficulty {
 }
 
 impl<'a> FromSql<'a> for Difficulty {
-    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn StdError + Send + Sync>> {
+    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let s = std::str::from_utf8(raw)?;
         s.parse().map_err(|e| {
             Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-                as Box<dyn StdError + Send + Sync>
+                as Box<dyn Error + Send + Sync>
         })
     }
 
@@ -98,7 +99,7 @@ impl ToSql for Priority {
         &self,
         _ty: &Type,
         out: &mut BytesMut,
-    ) -> Result<IsNull, Box<dyn StdError + Send + Sync>> {
+    ) -> Result<IsNull, Box<dyn Error + Send + Sync>> {
         match self {
             Priority::Low => out.extend_from_slice(b"low"),
             Priority::Medium => out.extend_from_slice(b"medium"),
@@ -128,11 +129,11 @@ impl FromStr for Priority {
 }
 
 impl<'a> FromSql<'a> for Priority {
-    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn StdError + Send + Sync>> {
+    fn from_sql(_ty: &Type, raw: &'a [u8]) -> Result<Self, Box<dyn Error + Send + Sync>> {
         let s = std::str::from_utf8(raw)?;
         s.parse().map_err(|e| {
             Box::new(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-                as Box<dyn StdError + Send + Sync>
+                as Box<dyn Error + Send + Sync>
         })
     }
 
@@ -147,4 +148,79 @@ pub struct Task {
     pub difficulty: Option<Difficulty>,
     pub priority: Option<Priority>,
     pub deadline: Option<NaiveDate>,
+}
+
+impl Task {
+    pub async fn insert_todo(&self) -> Result<(), Box<dyn Error>> {
+        let client = get_client().await?;
+
+        client
+            .execute(
+                "INSERT INTO todo (description, priority, difficulty, deadline) VALUES ($1, $2, $3, $4)",
+                &[&self.description, &self.priority, &self.difficulty, &self.deadline],
+            )
+            .await
+            .expect("Failed to insert task");
+
+        println!("Task \"{}\" created successfully!", self.description);
+
+        Ok(())
+    }
+
+    pub async fn delete_task(&self) -> Result<(), Box<dyn Error>> {
+        let client = get_client().await?;
+
+        client
+            .execute(
+                "DELETE FROM todo WHERE description = $1",
+                &[&self.description],
+            )
+            .await
+            .expect("Failed to delete task");
+
+        println!("Task \"{}\" deleted successfully!", self.description);
+
+        Ok(())
+    }
+
+    pub async fn list_tasks() -> Result<Vec<Task>, Box<dyn Error>> {
+        let client = get_client().await?;
+
+        let today = Local::now().date_naive();
+        let rows = client
+            .query(
+                "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
+                &[&today],
+            )
+            .await
+            .expect("Failed to fetch all tasks.");
+
+        let tasks: Vec<Task> = rows
+            .iter()
+            .map(|row| Task {
+                description: row.get(0),
+                priority: row.get(1),
+                difficulty: row.get(2),
+                deadline: row.get(3),
+            })
+            .collect();
+
+        Ok(tasks)
+    }
+
+    pub async fn update_task(&self, old_description: String) -> Result<(), Box<dyn Error>> {
+        let client = get_client().await?;
+
+        client
+            .execute(
+                "UPDATE todo SET description = $1, priority = $2, difficulty = $3, deadline = $4 WHERE description = $5",
+                &[&self.description, &self.priority, &self.difficulty, &self.deadline, &old_description],
+            )
+            .await
+            .expect("Failed to update task");
+
+        println!("Task updated successfully!");
+
+        Ok(())
+    }
 }

@@ -1,15 +1,16 @@
 use std::io;
 
-use clap::{CommandFactory, Parser};
+use clap::CommandFactory;
 use clap_complete::{generate, Shell};
 
-#[derive(Parser)]
+#[derive(clap::Args)]
 pub struct Args {
     #[clap(value_enum, help = "The shell to generate completions script for")]
     pub shell: Shell,
 }
 
 pub fn command(args: &Args) {
-    let mut app = Args::command();
-    generate(args.shell, &mut app, "todo", &mut io::stdout());
+    let mut cmd = crate::Args::command();
+    let bin_name = "todo";
+    generate(args.shell, &mut cmd, bin_name, &mut io::stdout());
 }

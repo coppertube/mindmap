@@ -8,6 +8,7 @@ mod show;
 mod update;
 
 #[derive(Parser)]
+#[command(name = "todo")]
 struct Args {
     #[command(subcommand)]
     command: Commands,

@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use bytes::BytesMut;
-use chrono::{Local, NaiveDate};
+use chrono::NaiveDate;
 use clap::ValueEnum;
 use db::get_client;
 use tokio_postgres::types::{FromSql, IsNull, ToSql, Type};
@@ -193,20 +193,19 @@ impl Task {
         Ok(())
     }
 
-    pub async fn list_tasks(current: bool) -> Result<Vec<Task>, Box<dyn Error>> {
+    pub async fn list_tasks(date: Option<NaiveDate>) -> Result<Vec<Task>, Box<dyn Error>> {
         let client = get_client().await?;
-
-        let today = Local::now().date_naive();
-        let (query, params): (&str, &[&(dyn ToSql + Sync)]) = if current {
-            (
-                "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
-                &[&today],
-            )
-        } else {
-            (
-                "SELECT description, priority, difficulty, deadline FROM todo",
-                &[],
-            )
+        let (query, params): (&str, &[&(dyn ToSql + Sync)]) = match date {
+            Some(_d) =>
+                (
+                    "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
+                    &[&date.unwrap()],
+                ),
+            None =>
+                (
+                    "SELECT description, priority, difficulty, deadline FROM todo",
+                    &[],
+                )
         };
         let rows = client
             .query(query, params)

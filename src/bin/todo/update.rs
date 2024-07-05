@@ -7,7 +7,7 @@ use mindmap::{Difficulty, Priority};
 pub struct Args {}
 
 pub async fn command(_args: &Args) {
-    let tasks = Task::list_tasks(false)
+    let tasks = Task::list_tasks(None)
         .await
         .expect("Internal Server Error. Try Again!");
 

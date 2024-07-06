@@ -1,7 +1,6 @@
 use chrono::{Local, Weekday};
 use clap::Parser;
-use mindmap::Task;
-use mindmap::{Difficulty, Priority};
+use mindmap::{Difficulty, Priority, Task};
 
 #[derive(Parser)]
 pub struct Args {}

@@ -15,6 +15,9 @@ pub async fn command(_args: &Args) {
         println!("------------------------\nTask: {}", row.description);
         println!("Priority: {:?}", row.priority.unwrap());
         println!("Difficulty: {:?}", row.difficulty.unwrap());
-        println!("Deadline: {:?}\n------------------------\n", row.deadline.unwrap());
+        println!(
+            "Deadline: {:?}\n------------------------\n",
+            row.deadline.unwrap()
+        );
     }
 }

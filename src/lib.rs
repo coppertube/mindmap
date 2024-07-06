@@ -195,17 +195,19 @@ impl Task {
 
     pub async fn list_tasks(date: Option<NaiveDate>) -> Result<Vec<Task>, Box<dyn Error>> {
         let client = get_client().await?;
+        let date_params: NaiveDate;
         let (query, params): (&str, &[&(dyn ToSql + Sync)]) = match date {
-            Some(_d) =>
+            Some(d) => {
+                date_params = d;
                 (
                     "SELECT description, priority, difficulty, deadline FROM todo WHERE deadline = $1::date",
-                    &[&date.unwrap()],
-                ),
-            None =>
-                (
-                    "SELECT description, priority, difficulty, deadline FROM todo",
-                    &[],
+                    &[&date_params],
                 )
+            }
+            None => (
+                "SELECT description, priority, difficulty, deadline FROM todo",
+                &[],
+            ),
         };
         let rows = client
             .query(query, params)

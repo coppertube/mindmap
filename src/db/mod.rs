@@ -1,14 +1,15 @@
-use std::env;
-
-use dotenv::dotenv;
 use tokio::sync::OnceCell;
 use tokio_postgres::{Client, Error, NoTls};
+
+use crate::configuration::get_configuration;
 
 static CLIENT: OnceCell<Client> = OnceCell::const_new();
 
 async fn init_client() -> Result<Client, Error> {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let database_url = get_configuration()
+        .expect("Failed to read configuration")
+        .database
+        .connection_string();
 
     let (client, connection) = tokio_postgres::connect(&database_url, NoTls).await?;
 

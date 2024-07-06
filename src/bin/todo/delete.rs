@@ -5,27 +5,11 @@ use mindmap::Task;
 #[derive(Parser)]
 pub struct Args {}
 
-pub fn command(_args: &Args) {
-    let tasks = [
-        Task {
-            description: String::from("learn rust"),
-            difficulty: None,
-            priority: None,
-            deadline: None,
-        },
-        Task {
-            description: String::from("build mindmap cli"),
-            difficulty: None,
-            priority: None,
-            deadline: None,
-        },
-        Task {
-            description: String::from("build mindmap gui"),
-            difficulty: None,
-            priority: None,
-            deadline: None,
-        },
-    ];
+pub async fn command(_args: &Args) {
+    let tasks = Task::list_tasks(None)
+        .await
+        .expect("Internal Server Error. Try Again!");
+
     let task_description = Select::new(
         "Select the task to delete:",
         tasks.iter().map(|task| &task.description).collect(),
@@ -33,5 +17,10 @@ pub fn command(_args: &Args) {
     .prompt()
     .expect("An error occurred!");
 
-    println!("Task \"{}\" deleted successfully!", task_description);
+    let task = tasks
+        .iter()
+        .find(|task| task.description == *task_description)
+        .expect("Task not found!");
+
+    task.delete_from_db().await.expect("Failed to delete task");
 }

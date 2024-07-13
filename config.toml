@@ -1,4 +1,5 @@
 debug = 0
+chat_model = "elvee/hermes-2-pro-llama-3:8b-Q5_K_M"
 
 [database]
 name = "mindmap"
@@ -6,3 +7,8 @@ host = "localhost"
 password = "password"
 port = 5432
 username = "postgres"
+
+[ollama]
+ollama_scheme = "http"
+ollama_host = "localhost"
+ollama_port = 11434

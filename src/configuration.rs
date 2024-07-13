@@ -5,6 +5,8 @@ use serde::Deserialize;
 pub struct Configuration {
     pub database: DatabaseConfiguration,
     pub debug: bool,
+    pub chat_model: String,
+    pub ollama: OllamaConfiguration,
 }
 
 #[derive(Deserialize)]
@@ -16,11 +18,27 @@ pub struct DatabaseConfiguration {
     pub username: String,
 }
 
+#[derive(Deserialize)]
+pub struct OllamaConfiguration {
+    ollama_scheme: String,
+    ollama_host: String,
+    ollama_port: u16,
+}
+
 impl DatabaseConfiguration {
     pub fn connection_string(&self) -> String {
         format!(
             "postgres://{}:{}@{}:{}/{}",
             self.username, self.password, self.host, self.port, self.name
+        )
+    }
+}
+
+impl OllamaConfiguration {
+    pub fn ollama_url(&self) -> String {
+        format!(
+            "{}://{}:{}",
+            self.ollama_scheme, self.ollama_host, self.ollama_port
         )
     }
 }

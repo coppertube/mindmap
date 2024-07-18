@@ -8,10 +8,21 @@
     flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils, flakebox }:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      flakebox,
+    }:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         projectName = "mindmap";
+
+        pkgs = nixpkgs.legacyPackages.${system};
+        openssl = pkgs.openssl;
+        libldap = pkgs.openldap;
 
         flakeboxLib = flakebox.lib.${system} {
           config = {
@@ -33,26 +44,48 @@
           paths = buildPaths;
         };
 
-        multiBuild =
-          (flakeboxLib.craneMultiBuild { }) (craneLib':
-            let
-              craneLib = (craneLib'.overrideArgs {
+        multiBuild = (flakeboxLib.craneMultiBuild { }) (
+          craneLib':
+          let
+            craneLib = (
+              craneLib'.overrideArgs {
                 pname = projectName;
                 src = buildSrc;
-                nativeBuildInputs = [ ];
-              });
-            in
-            {
-              mindmap = craneLib.buildPackage { meta.mainProgram = "mindmap"; };
-              todo = craneLib.buildPackage { meta.mainProgram = "todo"; };
-            });
+                nativeBuildInputs = [
+                  pkgs.pkg-config
+                  openssl
+                  libldap
+                ];
+                buildInputs = [
+                  openssl
+                  libldap
+                ];
+                cargoBuildOptions = [ "--features=vendored" ];
+              }
+            );
+          in
+          {
+            mindmap = craneLib.buildPackage { meta.mainProgram = "mindmap"; };
+            todo = craneLib.buildPackage { meta.mainProgram = "todo"; };
+          }
+        );
       in
       {
         packages.default = multiBuild.${projectName};
 
         legacyPackages = multiBuild;
 
-        devShells = flakeboxLib.mkShells { };
+        devShells = flakeboxLib.mkShells {
+          nativeBuildInputs = [ pkgs.pkg-config ];
+          buildInputs = [
+            openssl
+            libldap
+          ];
+          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [
+            openssl
+            libldap
+          ];
+        };
       }
     );
 }

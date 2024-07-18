@@ -1,5 +1,6 @@
 use clap::{Parser, Subcommand};
 
+mod auto;
 mod completion;
 mod create;
 mod delete;
@@ -28,9 +29,12 @@ enum Commands {
     Delete(delete::Args),
     /// Generate shell completion scripts
     Completion(completion::Args),
+    /// Automatically run the desired command
+    Auto(auto::Args),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let cli = Args::parse();
 
     match &cli.command {
@@ -40,5 +44,6 @@ fn main() {
         Commands::Update(args) => update::command(args),
         Commands::Delete(args) => delete::command(args),
         Commands::Completion(args) => completion::command(args),
+        Commands::Auto(args) => auto::command(args).await,
     }
 }
